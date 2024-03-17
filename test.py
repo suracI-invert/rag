@@ -1,31 +1,45 @@
-from multiprocessing import Queue, Process
+from src.models.emb import DummyModel
+from src.tasks.pipeline import *
+from src.tasks.broker import Broker, ResultStore
+from src.tasks.handler import producer, consumer
 
-class Dummy:
-    def process(self, text):
-        return f'{text} processed'
+from threading import Thread
 
-def work(q, r):
-    d = Dummy()
+broker = Broker()
+model = DummyModel()
+model.register(broker)
+store = ResultStore(broker.get_result_queue())
+
+broker.start()
+model.start()
+store.start()
+
+def get_result(result_dict, task_id):
     while True:
-        msg = q.get()
-        if msg == 'close':
-            r.put('close')
-            return
-        res = d.process(msg)
-        r.put(res)
-
-q = Queue()
-r = Queue()
-
-p = Process(target=work, args=(q, r,))
-p.start()
+        try:
+            ret = result_dict[task_id]
+        except KeyError as e:
+            continue
+        except Exception as e:
+            raise e
+        else:
+            print(ret)
+            break
 
 while True:
     m = input()
-    q.put(m)
-    res = r.get()
-    print(res)
-    if res == 'close':
+    if m == 'close':
         break
+    
+    tr = TaskRequest(data={'text': m})
+    task_id = tr.id
+    msg = Message(topic='unset', payload=tr)
 
-p.join()
+    ret = producer(broker.get_incoming_queue(), msg)
+    print(f'Sent from user: {ret}')
+
+    get_result(store.result_dict, task_id)
+
+model.close()
+broker.close()
+store.close()

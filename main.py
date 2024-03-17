@@ -1,24 +1,28 @@
 from contextlib import asynccontextmanager
-from multiprocessing import Process, Queue
 
 from fastapi import FastAPI
 
 from src.models.emb import DummyModel
 from src.tasks.broker import *
 from src.api import upload
-from src.tasks.processes import *
+from src.tasks.handler import *
 
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.task_queue = Queue()
-    app.state.result_queue = Queue()
-    app.state.model = Process(target=process_data, args=(app.state.task_queue, app.state.result_queue,))
     app.state.broker = Broker()
+    app.state.broker.start()
+    app.state.model = DummyModel(
+        app.state.broker.get_task_queue(Topic.Doc),
+        app.state.broker.get_result_queue())
     app.state.model.start()
+    app.state.model.probe()
     yield
+    app.state.model.close()
     app.state.model.join()
+    app.state.broker.close()
+    app.state.broker.join()
 
 app = FastAPI(lifespan=lifespan)
 
