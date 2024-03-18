@@ -1,10 +1,12 @@
 from multiprocessing import Queue, Process, Event
-from uuid import uuid4
+import logging
 from queue import Full, Empty
 from collections import deque
 
 from src.tasks.broker import Broker
 from src.tasks.pipeline import Message, TaskRequest, TaskResult
+
+logger = logging.getLogger('uvicorn.error')
 
 def producer(queue: Queue, msg: Message) -> Message | None:
     try:
@@ -39,6 +41,8 @@ class Worker(Process):
 
         self.topic = topic
 
+        self.prefix = f'Worker [{self.name}]'
+
     def __mapping(self, child_cls):
         # Dynamic Dispatching
         for attr_name in dir(child_cls):
@@ -50,10 +54,10 @@ class Worker(Process):
         for t in self.topic:
             tq = broker.get_task_queue(t)
             if not tq:
-                print(f'Failed to register [{t}] task queue')
+                logger.error(f'{self.prefix} failed to register [{t}] task queue')
                 continue
             self.__tqs[t] = tq
-            print(f'Register [{t}] task queue')
+            logger.info(f'{self.prefix}  register [{t}] task queue')
         self.__rq = broker.result_queue
 
     def close(self):
@@ -61,6 +65,7 @@ class Worker(Process):
         self.join()
 
         #TODO: Logging here
+        logger.info(f'{self.prefix}  shutdown')
     
     def process(self, topic: str, task_req: TaskRequest) -> tuple[str, TaskResult]:
         # Dynamic dispatch
@@ -77,13 +82,13 @@ class Worker(Process):
                 if not msg:
                     continue
                 else:
-                    print(f'Worker received: {msg}')
+                    logger.debug(f'{self.prefix} received task: {msg.payload}')
                     self.__msg_cache.appendleft(msg)
             if len(self.__msg_cache) == 0:
                 continue
             msg = self.__msg_cache.pop()
 
-            print(f'Worker start task: {msg}')
+            logger.debug(f'{self.prefix} start task: {msg.payload}')
             next_task = msg.payload
             task_id, task_result = self.process(msg.topic, next_task) # Payload: TaskRequest
             self.__res_list.appendleft((task_id, task_result))
@@ -93,5 +98,5 @@ class Worker(Process):
                 if not ret:
                     break
                 else:
-                    print(f'Worker sent result: {res_tuple}')
+                    logger.debug(f'{self.prefix} sent: {res_tuple}')
                     self.__res_list.pop()

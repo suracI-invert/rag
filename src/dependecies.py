@@ -1,12 +1,15 @@
 #TODO: Handle doc processing task
 from typing import Annotated
 from time import sleep
+import logging
 
 from fastapi import Depends
 from pydantic import BaseModel
 
 from src.tasks.broker import *
 from src.tasks.handler import *
+
+logger = logging.getLogger('uvicorn.error')
 
 def build_task_request(data: BaseModel) -> TaskResult:
     return TaskRequest(data=data.model_dump())
@@ -22,13 +25,13 @@ def start_task(store: ResultStore, queue: Queue, task: TaskResult, topic: str):
         ret = producer(queue, msg)
         if not ret:
             sleep(0.001)
-    print(f'Sent: {msg}')
+    logger.debug(f'Sent: {msg}')
 
 def check_task(store: ResultStore, id: str):
     try:
         res = store.result_dict[id]
     except KeyError as e:
-        print(e)
+        logger.exception(e)
         return None
-    print(f'Consume: {res}')
+    logger.debug(f'Consume: {res}')
     return res

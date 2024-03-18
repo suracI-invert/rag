@@ -2,25 +2,16 @@ from contextlib import asynccontextmanager
 import logging
 
 from fastapi import FastAPI
-from uvicorn import run
+import uvicorn
 
 from src.models.emb import DummyModel
 from src.tasks.broker import *
 from src.api import upload
 from src.tasks.handler import *
-from src.logger import CustomFormatter
-
-logger = logging.getLogger('uvicorn.access')
-handler = logging.StreamHandler()
-handler.setFormatter(CustomFormatter())
-logger.addHandler(handler)
-
-logger.info('start')
-
+from src.logger import load_config
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-
     app.state.broker = Broker(('doc',))
     app.state.model = DummyModel(('doc',))
     app.state.model.register(app.state.broker)
@@ -43,4 +34,5 @@ async def home():
     return 'Deep state is real'
 
 if __name__ == "__main__":
-    run(app, host='127.0.0.1', port=8000)
+    config = load_config('logger.yaml')
+    uvicorn.run(app, host='127.0.0.1', port=8000, log_config=config, log_level='debug')

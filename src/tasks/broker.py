@@ -9,8 +9,11 @@ from queue import Empty, Full
 from dataclasses import dataclass
 from functools import wraps
 from time import perf_counter
+import logging
 
 from src.tasks.pipeline import TaskResult
+
+logger = logging.getLogger('uvicorn.error')
 
 class ResultStore:
     __result_dict: dict[id, TaskResult] = {}
@@ -20,6 +23,8 @@ class ResultStore:
 
     def __init__(self, result_queue):
         self.__queue = result_queue
+
+        self.prefix = f'[ResultStore]'
 
     @property
     def result_dict(self):
@@ -34,9 +39,9 @@ class ResultStore:
             except Empty:
                 continue
             else:
-                print(f'ResultStore save task [{task_id}]: {task_res}')
+                logger.debug(f'{self.prefix} save task [{task_id}]: {task_res}')
                 self.__result_dict[task_id] = task_res
-                print(f'ResultStore state: {self.__result_dict}')
+                logger.debug(f'{self.prefix} state: {self.__result_dict}')
 
     def start(self):
         self.__poll_thread = Thread(target=self.poll, name='ResultStore_poll_thread')
@@ -45,6 +50,10 @@ class ResultStore:
     def close(self):
         self.__quit = True
         self.__poll_thread.join()
+
+        logger.info(f'{self.prefix} shutdown')
+
+
 
 class Broker(Process):
     __incoming_queue = Queue()
@@ -62,9 +71,13 @@ class Broker(Process):
         for t in list_topics:
             self.__task_queues[t] = Queue()
 
+        self.prefix = f'[Broker]'
+
     def close(self):
         self.__quit.set()
         self.join()
+
+        logger.info(f'{self.prefix} shutdown')
 
     def get_task_queue(self, topic: str):
         try:
@@ -92,7 +105,7 @@ class Broker(Process):
             except Empty:
                 pass
             else:
-                print(f'Broker received: {incoming_msg}')
+                logger.debug(f'{self.prefix} received: {incoming_msg}')
                 self.__incoming_cache.appendleft(incoming_msg)
 
             if len(self.__incoming_cache) > 0:
@@ -106,5 +119,5 @@ class Broker(Process):
                     pass
                     #TODO: Error handling
                 else:
-                    print(f'Broker sent: {msg} through [{q}]')
+                    logger.debug(f'{self.prefix} sent: {msg} through [{q}]')
                     self.__incoming_cache.pop()

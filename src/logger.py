@@ -1,4 +1,5 @@
 import logging
+import yaml
 
 class CustomFormatter(logging.Formatter):
     GREY = "\x1b[38;20m"
@@ -30,3 +31,8 @@ class CustomFormatter(logging.Formatter):
             record.exc_text = exc
         s = formatter.format(record)
         return s
+    
+def load_config(fname):
+    with open(f'./config/{fname}') as f:
+        loaded_config = yaml.safe_load(f)
+    return loaded_config
