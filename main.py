@@ -11,18 +11,18 @@ from src.tasks.handler import *
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.broker = Broker()
+    app.state.broker = Broker(('doc',))
+    app.state.model = DummyModel(('doc',))
+    app.state.model.register(app.state.broker)
+    app.state.store = ResultStore(app.state.broker.result_queue)
+
     app.state.broker.start()
-    app.state.model = DummyModel(
-        app.state.broker.get_task_queue(Topic.Doc),
-        app.state.broker.get_result_queue())
     app.state.model.start()
-    app.state.model.probe()
+    app.state.store.start()
     yield
     app.state.model.close()
-    app.state.model.join()
     app.state.broker.close()
-    app.state.broker.join()
+    app.state.store.close()
 
 app = FastAPI(lifespan=lifespan)
 

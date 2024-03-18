@@ -54,7 +54,7 @@ class Worker(Process):
                 continue
             self.__tqs[t] = tq
             print(f'Register [{t}] task queue')
-        self.__rq = broker.get_result_queue()
+        self.__rq = broker.result_queue
 
     def close(self):
         self.__quit.set()

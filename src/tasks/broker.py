@@ -73,10 +73,12 @@ class Broker(Process):
             return None
         return q
     
-    def get_result_queue(self):
+    @property
+    def result_queue(self):
         return self.__result_queue
     
-    def get_incoming_queue(self):
+    @property
+    def incoming_queue(self):
         return self.__incoming_queue
     
     def run(self):

@@ -1,21 +1,34 @@
 #TODO: Handle doc processing task
 from typing import Annotated
+from time import sleep
 
 from fastapi import Depends
+from pydantic import BaseModel
 
 from src.tasks.broker import *
 from src.tasks.handler import *
 
-def prepare_msg(data, topic: Topic):
-    return Message(topic=topic, data=data)
+def build_task_request(data: BaseModel) -> TaskResult:
+    return TaskRequest(data=data.model_dump())
 
-def produce_msg(broker: Broker, msg: Message):
-    ret = producer(broker.get_incoming_queue(), msg)
+def prepare_msg(payload: Any, topic: str):
+    return Message(topic=topic, payload=payload)
 
-    print(f'Produce: {msg}')
+def start_task(store: ResultStore, queue: Queue, task: TaskResult, topic: str):
+    store.result_dict[task.id] = TaskResult(state=task.state, result=None)
+    msg = prepare_msg(task, topic)
+    ret = None
+    while not ret:
+        ret = producer(queue, msg)
+        if not ret:
+            sleep(0.001)
+    print(f'Sent: {msg}')
 
-def consume_msg(broker: Broker, id: str):
-    res = broker.get_result(id)
-
+def check_task(store: ResultStore, id: str):
+    try:
+        res = store.result_dict[id]
+    except KeyError as e:
+        print(e)
+        return None
     print(f'Consume: {res}')
     return res
