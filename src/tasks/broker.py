@@ -107,7 +107,6 @@ class Broker(Process):
             else:
                 logger.debug(f'{self.prefix} received: {incoming_msg}')
                 self.__incoming_cache.appendleft(incoming_msg)
-
             if len(self.__incoming_cache) > 0:
                 try:
                     msg = self.__incoming_cache[-1]

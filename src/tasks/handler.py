@@ -1,4 +1,5 @@
 from multiprocessing import Queue, Process, Event
+from threading import Thread
 import logging
 from queue import Full, Empty
 from collections import deque
@@ -25,7 +26,7 @@ def consumer(queue: Queue) -> Message | None:
         return msg
 
 #TODO: Add a task register from function aka method creating decorator
-class Worker(Process):
+class Worker(Thread):
     __res_list = deque()
     __msg_cache = deque()
     __tqs: dict[str, Queue] = {}
@@ -35,8 +36,9 @@ class Worker(Process):
     __handler_map: dict[str, callable] = {}
 
     def __init__(self, child_cls, topic: tuple['str'] = ('unset',), name: str = None):
-        Process.__init__(self, name=name)
-
+        # Process.__init__(self, name=name)
+        Thread.__init__(self, name = name)
+        # self.name = name
         self.__mapping(child_cls)
 
         self.topic = topic

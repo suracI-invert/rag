@@ -12,6 +12,9 @@ name = "downloadpytorch"
 fastapi = "*"
 uvicorn = {extras = ["standard"], version = "*"}
 torch = {version = "==2.2.1", index = "downloadpytorch"}
+transformers = "*"
+requests = "*"
+python-dotenv = "*"
 
 [dev-packages]
 
