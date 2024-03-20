@@ -1,8 +1,17 @@
 from contextlib import asynccontextmanager
+from multiprocessing import set_start_method
 import logging
 from dotenv import load_dotenv
 
 load_dotenv('./.env', override=True)
+
+if __name__ == '__main__':
+    try:
+        set_start_method('spawn')
+    except Exception as e:
+        pass
+    else:
+        print('spawned')
 
 from fastapi import FastAPI
 import uvicorn

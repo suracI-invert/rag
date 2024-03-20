@@ -25,8 +25,8 @@ def consumer(queue: Queue) -> Message | None:
     else:
         return msg
 
-#TODO: Add a task register from function aka method creating decorator
-class Worker(Thread):
+#TODO: THREADING CAN WORKS/ PREFERABLY USING PROCESS WITH MANAGER??? FOR QUEUE
+class Worker(Process):
     __res_list = deque()
     __msg_cache = deque()
     __tqs: dict[str, Queue] = {}
@@ -36,9 +36,7 @@ class Worker(Thread):
     __handler_map: dict[str, callable] = {}
 
     def __init__(self, child_cls, topic: tuple['str'] = ('unset',), name: str = None):
-        # Process.__init__(self, name=name)
-        Thread.__init__(self, name = name)
-        # self.name = name
+        super().__init__(name=name)
         self.__mapping(child_cls)
 
         self.topic = topic
