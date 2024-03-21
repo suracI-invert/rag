@@ -1,0 +1,11 @@
+text,output,flag,username,timestamp
+Large language model of the year,"'  Large language models have advanced the state of the art in natural language
+processing. However, their predominant design for English or a limited set of
+languages creates a substantial gap in their effectiveness for low-resource
+languages. To bridge this gap, we introduce MaLA-500, a novel large language
+model designed to cover an extensive range of 534 languages. To train MaLA-500,
+we employ vocabulary extension and continued pretraining on LLaMA 2 with
+Glot500-c. Our experiments on SIB-200 show that MaLA-500 achieves
+state-of-the-art in-context learning results. We release MaLA-500 at
+https://huggingface.co/MaLA-LM
+",,,2024-03-22 02:49:56.727279
