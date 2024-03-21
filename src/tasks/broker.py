@@ -109,13 +109,16 @@ class Broker(Process):
             if len(self.__incoming_cache) > 0:
                 try:
                     msg = self.__incoming_cache[-1]
-                    q = self.__task_queues[msg.topic]
-                    q.put(msg, block=False)
+                    topic = msg.topic
+                    if topic == 'result':
+                        self.__result_queue.put(msg.payload, block=False)
+                    else:
+                        self.__task_queues[topic].put(msg, block=False)
                 except Full:
                     pass
                 except KeyError:
                     pass
                     #TODO: Error handling
                 else:
-                    logger.debug(f'{self.prefix} sent: {msg} through [{q}]')
+                    logger.debug(f'{self.prefix} sent: {msg.id} through {msg.topic}')
                     self.__incoming_cache.pop()

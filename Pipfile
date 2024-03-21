@@ -17,6 +17,7 @@ requests = "*"
 python-dotenv = "*"
 pymilvus = "*"
 pymongo = {extras = ["srv"], version = "*"}
+gradio = "*"
 
 [dev-packages]
 

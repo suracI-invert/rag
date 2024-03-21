@@ -1,13 +1,17 @@
 from time import perf_counter, sleep
 from functools import wraps
+import logging
 
-from src.tasks.pipeline import TaskResult, TaskRequest, State, Result
+from src.tasks.pipeline import TaskResult, TaskRequest, State
+
+logger = logging.getLogger('uvicorn.error')
 
 def task(topic: str):
     """Decorator to register a method as a task with topic, the decorator accepts and deconstructs the TaskRequest object into parameters of underlying tasks as a dict (data attribute)
 
         Parameter
         ----------
+        topic: str
         tr: TaskRequest
             * id: str
                 unique task id
@@ -18,7 +22,7 @@ def task(topic: str):
 
         Return
         ----------
-        tuple(str, TaskResult)
+        tuple(str, TaskResult | TaskRequest)
 
         str
             unique task id
@@ -31,24 +35,29 @@ def task(topic: str):
                 * data: Any
                     returned value
                 )
-
-
     """
     def decorator(func):
         @wraps(func)
         def wrapper(self, tr: TaskRequest):
             t = perf_counter()
             state = tr.state
+            topic = ''
             try:
-                data = func(self, **tr.data)
+                topic, data = func(self, **tr.data)
             except Exception:
                 state = State.Failed
                 data = None
             else:
                 state = State.Success
             duration = perf_counter() -  t
-
-            return tr.id, TaskResult(state=state, result=Result(duration=duration, data=data))
+            logger.debug(f'Task [{tr.id} - {topic}]: {duration}')
+            res_tuple = ()
+            if topic == 'result':
+                res_tuple = (tr.id, topic, TaskResult(state=state, data=data))
+            else:
+                tr.data = data
+                res_tuple = (topic, topic, tr)
+            return res_tuple
         
         setattr(wrapper, 'topic', topic)
         return wrapper

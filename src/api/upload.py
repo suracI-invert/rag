@@ -9,7 +9,7 @@ router = APIRouter(
     prefix='/upload'
 )
 
-@router.post('/doc')
+@router.post('/doc', status_code=202)
 async def upload_doc(
         doc: DocumentUpload, 
         background_tasks: BackgroundTasks, 

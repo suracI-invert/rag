@@ -18,7 +18,7 @@ def prepare_msg(payload: Any, topic: str):
     return Message(topic=topic, payload=payload)
 
 def start_task(store: ResultStore, queue: Queue, task: TaskResult, topic: str):
-    store.result_dict[task.id] = TaskResult(state=task.state, result=None)
+    store.result_dict[task.id] = TaskResult(state=task.state, data=None)
     msg = prepare_msg(task, topic)
     ret = None
     while not ret:

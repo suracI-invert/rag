@@ -58,7 +58,7 @@ class Worker(Thread):
                 continue
             self.__tqs[t] = tq
             logger.info(f'{self.prefix}  register [{t}] task queue')
-        self.__rq = broker.result_queue
+        self.__rq = broker.incoming_queue
 
     def close(self):
         self.__quit.set()
@@ -90,11 +90,12 @@ class Worker(Thread):
 
             logger.debug(f'{self.prefix} start task: {msg.payload}')
             next_task = msg.payload
-            task_id, task_result = self.process(msg.topic, next_task) # Payload: TaskRequest
-            self.__res_list.appendleft((task_id, task_result))
+            task_id, topic, tr = self.process(msg.topic, next_task) # Payload: TaskRequest
+            self.__res_list.appendleft((task_id, topic, tr))
             while len(self.__res_list) > 0:
                 res_tuple = self.__res_list[-1]
-                ret = producer(self.__rq, res_tuple)
+                msg = Message(res_tuple[1], (res_tuple[0], res_tuple[2])) if res_tuple[1] == 'result' else Message(res_tuple[1], res_tuple[2])
+                ret = producer(self.__rq, msg)
                 if not ret:
                     break
                 else:

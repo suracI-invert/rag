@@ -24,11 +24,6 @@ class TaskRequest:
     data: dict = None
 
 @dataclass
-class Result:
-    duration: float
-    data: dict
-
-@dataclass
 class TaskResult:
     state: int
-    result: Result
+    data: dict
