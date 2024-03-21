@@ -33,5 +33,4 @@ def check_task(store: ResultStore, id: str):
     except KeyError as e:
         logger.exception(e)
         return None
-    logger.debug(f'Consume: {res}')
     return res

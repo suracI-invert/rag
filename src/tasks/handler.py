@@ -1,5 +1,5 @@
-from multiprocessing import Queue, Process, Event
-from threading import Thread
+from multiprocessing import Queue, Process
+from threading import Thread, Event
 import logging
 from queue import Full, Empty
 from collections import deque
@@ -26,17 +26,17 @@ def consumer(queue: Queue) -> Message | None:
         return msg
 
 #TODO: THREADING CAN WORKS/ PREFERABLY USING PROCESS WITH MANAGER??? FOR QUEUE
-class Worker(Process):
-    __res_list = deque()
-    __msg_cache = deque()
-    __tqs: dict[str, Queue] = {}
-    __rq: Queue = None
-    __quit = Event()
-
-    __handler_map: dict[str, callable] = {}
+class Worker(Thread):
 
     def __init__(self, child_cls, topic: tuple['str'] = ('unset',), name: str = None):
         super().__init__(name=name)
+        self.__res_list = deque()
+        self.__msg_cache = deque()
+        self.__tqs: dict[str, Queue] = {}
+        self.__rq: Queue = None
+        self.__quit = Event()
+
+        self.__handler_map: dict[str, callable] = {}
         self.__mapping(child_cls)
 
         self.topic = topic
@@ -98,5 +98,5 @@ class Worker(Process):
                 if not ret:
                     break
                 else:
-                    logger.debug(f'{self.prefix} sent: {res_tuple}')
+                    logger.debug(f'{self.prefix} sent res [{res_tuple[0]}]')
                     self.__res_list.pop()

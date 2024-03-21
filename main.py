@@ -5,13 +5,13 @@ from dotenv import load_dotenv
 
 load_dotenv('./.env', override=True)
 
-if __name__ == '__main__':
-    try:
-        set_start_method('spawn')
-    except Exception as e:
-        pass
-    else:
-        print('spawned')
+# if __name__ == '__main__':
+#     try:
+#         set_start_method('spawn')
+#     except Exception as e:
+#         pass
+#     else:
+#         print('spawned')
 
 from fastapi import FastAPI
 import uvicorn
@@ -24,9 +24,9 @@ from src.logger import load_config
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.broker = Broker(('doc',))
+    app.state.broker = Broker(('doc', 'query',))
     # app.state.model = DummyModel(('doc',))
-    app.state.model = BGE(topic=('doc',))
+    app.state.model = BGE(topic=('doc', 'query',))
     app.state.model.register(app.state.broker)
     app.state.store = ResultStore(app.state.broker.result_queue)
 

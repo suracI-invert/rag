@@ -6,6 +6,8 @@ from transformers import AutoModel, AutoTokenizer
 
 from src.tasks.handler import Worker
 from src.utils import task
+from src.database.connect import get_db
+from src.database.crud import search
 
 logger = logging.getLogger('uvicorn.error')
 class DummyModel(Worker):
@@ -37,3 +39,14 @@ class BGE(Worker):
             sentence_embeddings = model_output[0][:, 0]
             sentence_embeddings = torch.nn.functional.normalize(sentence_embeddings, p=2, dim=1).to('cpu').tolist()
         return {'vector': sentence_embeddings}
+    
+    @task('query')
+    def search(self, text):
+        with torch.no_grad():
+            encoded_input = self.tokenizer(text, padding=True, truncation=True, return_tensors='pt').to(self.device)
+            model_output = self.model(**encoded_input)
+            sentence_embeddings = model_output[0][:, 0]
+            sentence_embeddings = torch.nn.functional.normalize(sentence_embeddings, p=2, dim=1).to('cpu').tolist()
+        client = get_db()   #Need fix
+        res = search(client, sentence_embeddings)
+        return {'docs': res}

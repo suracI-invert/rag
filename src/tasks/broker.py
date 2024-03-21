@@ -39,9 +39,8 @@ class ResultStore:
             except Empty:
                 continue
             else:
-                logger.debug(f'{self.prefix} save task [{task_id}]: {task_res}')
+                logger.debug(f'{self.prefix} save task [{task_id}]')
                 self.__result_dict[task_id] = task_res
-                logger.debug(f'{self.prefix} state: {self.__result_dict}')
 
     def start(self):
         self.__poll_thread = Thread(target=self.poll, name='ResultStore_poll_thread')
