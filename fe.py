@@ -13,7 +13,7 @@ def query(text):
         res = requests.get(f'http://127.0.0.1:8000/re/query/status/{task_id}')
         task_state = res.json()
         if task_state['state'] == 1:
-            docs = [d['content'] for d in task_state['data']['docs']]
+            docs = [d['content'] for d in task_state['data']['response']]
             ret = docs[0]
             break
         elif task_state['state'] == 2:

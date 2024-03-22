@@ -3,7 +3,7 @@ import logging
 from typing import Any
 
 import torch
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, BitsAndBytesConfig
 
 from src.tasks.handler import Worker
 from src.utils import task
@@ -24,7 +24,20 @@ class Reranker(Worker):
             self.device = device
         
     def setup(self):
-        self.model = AutoModelForSequenceClassification.from_pretrained(self.MODEL_NAME).to(self.device).to_bettertransformer()
+        quantization_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_compute_dtype=torch.float16
+        )
+        if self.device == 'cuda':
+            # 8bit quantized (1.1GB -> 0.43GB)
+            # 4bit quantized (1.1GB -> 0.39GB)
+            self.model = AutoModelForSequenceClassification.from_pretrained(self.MODEL_NAME, quantization_config=quantization_config, low_cpu_mem_usage=True)
+
+            # For some reason this does not play nicely with quantization
+            # torch.Tensor should be of float/complex dtype for requires_grad???
+            # self.model = self.model.to_bettertransformer() 
+        else:
+            self.model = AutoModelForSequenceClassification.from_pretrained(self.MODEL_NAME)
         self.tokenizer = AutoTokenizer.from_pretrained(self.MODEL_NAME)
 
         self.model.eval()
@@ -51,4 +64,4 @@ class Reranker(Worker):
 
         score = self.model(**encoded_input, return_dict=True).logits.view(-1).to('cpu').detach().float()
         score = [s.item() for s in score]
-        return 'result', {'query': query, 'docs': self.sort_result(docs, score)}
+        return 'gen', {'query': query, 'docs': self.sort_result(docs, score)}

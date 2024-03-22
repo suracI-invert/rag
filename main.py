@@ -19,6 +19,7 @@ import uvicorn
 
 from src.models.emb import DummyModel, BGE
 from src.models.reranker import Reranker
+from src.models.llm import Mistral
 from src.tasks.broker import *
 from src.api import upload, query
 from src.tasks.handler import *
@@ -33,6 +34,7 @@ async def lifespan(app: FastAPI):
         'doc': p_manager.Queue(),
         'query': p_manager.Queue(),
         'rerank': p_manager.Queue(),
+        'gen': p_manager.Queue()
     }
     app.state.log_queue = p_manager.Queue()
 
@@ -44,6 +46,9 @@ async def lifespan(app: FastAPI):
     app.state.model_rerank = Reranker(topic=('rerank',))
     app.state.model_rerank.register(app.state.task_queues, app.state.incoming_queue, app.state.log_queue)
 
+    app.state.model_llm = Mistral(topic=('gen',))
+    app.state.model_llm.register(app.state.task_queues, app.state.incoming_queue, app.state.log_queue)
+
     app.state.store = ResultStore(app.state.result_queue)
 
     app.state.logger = MultiProcessesLogger(app.state.log_queue)
@@ -52,10 +57,12 @@ async def lifespan(app: FastAPI):
     app.state.broker.start()
     app.state.model_emb.start()
     app.state.model_rerank.start()
+    app.state.model_llm.start()
     app.state.store.start()
     yield
     app.state.model_emb.close()
     app.state.model_rerank.close()
+    app.state.model_llm.close()
     app.state.broker.close()
     app.state.store.close()
     app.state.logger.close()
