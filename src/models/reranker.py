@@ -10,6 +10,7 @@ from src.utils import task
 from src.database.connect import MongoDB
 from src.database.crud import find_doc
 
+logger = logging.getLogger('uvicorn.error')
 class Reranker(Worker):
     MODEL_NAME = 'BAAI/bge-reranker-base'
 
@@ -22,8 +23,10 @@ class Reranker(Worker):
         else:
             self.device = device
         
+    def setup(self):
         self.model = AutoModelForSequenceClassification.from_pretrained(self.MODEL_NAME).to(self.device)
         self.tokenizer = AutoTokenizer.from_pretrained(self.MODEL_NAME)
+        logger.info('Reranking model initialized')
 
     def build_pair(self, q: str, docs: list[str]):
         return [[q, d] for d in docs]

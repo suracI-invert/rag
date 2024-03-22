@@ -1,17 +1,18 @@
 from contextlib import asynccontextmanager
-from multiprocessing import set_start_method
+from multiprocessing import set_start_method, Manager, get_start_method
 import logging
 from dotenv import load_dotenv
 
 load_dotenv('./.env', override=True)
 
-# if __name__ == '__main__':
-#     try:
-#         set_start_method('spawn')
-#     except Exception as e:
-#         pass
-#     else:
-#         print('spawned')
+if __name__ == '__main__':
+    try:
+        set_start_method('spawn')
+    except Exception as e:
+        print(f'Process context set to default: {get_start_method()}')
+        pass
+    else:
+        print(f'Process context set to <{get_start_method()}>')
 
 from fastapi import FastAPI
 import uvicorn
@@ -22,19 +23,24 @@ from src.tasks.broker import *
 from src.api import upload, query
 from src.tasks.handler import *
 from src.logger import load_config
-from src.database.connect import get_vector_db
-
-vector_db = get_vector_db()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.broker = Broker(('doc', 'query', 'rerank',))
-    # app.state.model = DummyModel(('doc',))
+    p_manager = Manager()   # Host processs to manage share resources (queues)
+    app.state.incoming_queue = p_manager.Queue()
+    app.state.result_queue = p_manager.Queue()
+    app.state.task_queues = {
+        'doc': p_manager.Queue(),
+        'query': p_manager.Queue(),
+        'rerank': p_manager.Queue(),
+    }
+
+    app.state.broker = Broker(app.state.task_queues, app.state.incoming_queue, app.state.result_queue)
     app.state.model_emb = BGE(topic=('doc', 'query',))
-    app.state.model_emb.register(app.state.broker)
+    app.state.model_emb.register(app.state.task_queues, app.state.incoming_queue)
     app.state.model_rerank = Reranker(topic=('rerank',))
-    app.state.model_rerank.register(app.state.broker)
-    app.state.store = ResultStore(app.state.broker.result_queue)
+    app.state.model_rerank.register(app.state.task_queues, app.state.incoming_queue)
+    app.state.store = ResultStore(app.state.result_queue)
 
     app.state.broker.start()
     app.state.model_emb.start()
@@ -58,4 +64,3 @@ async def home():
 if __name__ == "__main__":
     config = load_config('logger.yaml')
     uvicorn.run(app, host='127.0.0.1', port=8000, log_config=config, log_level='debug')
-    vector_db.close()

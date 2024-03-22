@@ -1,10 +1,8 @@
-from multiprocessing import Queue, Process
-from threading import Thread, Event
+from multiprocessing import Queue, Process, Event
 import logging
 from queue import Full, Empty
 from collections import deque
 
-from src.tasks.broker import Broker
 from src.tasks.pipeline import Message, TaskRequest, TaskResult
 
 logger = logging.getLogger('uvicorn.error')
@@ -26,7 +24,7 @@ def consumer(queue: Queue) -> Message | None:
         return msg
 
 #TODO: THREADING CAN WORKS/ PREFERABLY USING PROCESS WITH MANAGER??? FOR QUEUE
-class Worker(Thread):
+class Worker(Process):
 
     def __init__(self, child_cls, topic: tuple['str'] = ('unset',), name: str = None):
         super().__init__(name=name)
@@ -50,15 +48,22 @@ class Worker(Thread):
             if callable(attr) and hasattr(attr, 'topic'):
                 self.__handler_map[attr.topic] = attr
 
-    def register(self, broker: Broker):
+    def setup(self):
+        """Should be overridden.
+        This method called after the process is created and started.
+        Initialize important resources should go to here to avoid shared memory bugs: <https://github.com/pytorch/pytorch/issues/112340>
+        """
+        raise NotImplementedError()
+
+    def register(self, tqs: dict[str, Queue], rq: Queue):
         for t in self.topic:
-            tq = broker.get_task_queue(t)
+            tq = tqs[t]
             if not tq:
                 logger.error(f'{self.prefix} failed to register [{t}] task queue')
                 continue
             self.__tqs[t] = tq
             logger.info(f'{self.prefix}  register [{t}] task queue')
-        self.__rq = broker.incoming_queue
+        self.__rq = rq
 
     def close(self):
         self.__quit.set()
@@ -73,9 +78,12 @@ class Worker(Thread):
 
     def run(self):
         #TODO: Clean this
+        logger.info(f'{self.prefix} spawned')
+        
+        self.setup()
+
         while True:
             if self.__quit.is_set():
-                #TODO: Logging here
                 break
             for t in self.topic:
                 msg = consumer(self.__tqs[t])
@@ -101,3 +109,5 @@ class Worker(Thread):
                 else:
                     logger.debug(f'{self.prefix} sent res [{res_tuple[0]}]')
                     self.__res_list.pop()
+    
+        logger.info(f'{self.prefix} shutdown')

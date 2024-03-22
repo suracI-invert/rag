@@ -13,7 +13,7 @@ async def start_query(
     background_tasks: BackgroundTasks,
     req: Request):
     task_request = build_task_request(q)
-    background_tasks.add_task(start_task, req.app.state.store, req.app.state.broker.incoming_queue, task_request, 'query')
+    background_tasks.add_task(start_task, req.app.state.store, req.app.state.incoming_queue, task_request, 'query')
     return task_request
 
 @router.get('/query/status/{id}')

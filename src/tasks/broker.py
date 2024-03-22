@@ -55,43 +55,28 @@ class ResultStore:
 
 
 class Broker(Process):
-    __incoming_queue = Queue()
-    __incoming_cache = deque()
 
-    __task_queues: dict[str, Queue] = {}
-
-    __result_queue = Queue()
-
-    def __init__(self, list_topics: tuple[str] = ('unset',)):
+    def __init__(self, task_queues: dict[str, Queue], incoming_queue: Queue, result_queue: Queue):
         Process.__init__(self)
+
+        # Initialize internal incomming messsage cache
+        self.__incoming_cache = deque()
+
+        self.__incoming_queue = incoming_queue
+        self.__task_queues: dict[str, Queue] = task_queues
+        self.__result_queue = result_queue
 
         self.__quit = Event()
 
-        for t in list_topics:
-            self.__task_queues[t] = Queue()
-
         self.prefix = f'[Broker]'
+
+        logger.info(f'{self.prefix} spawned')
 
     def close(self):
         self.__quit.set()
         self.join()
 
         logger.info(f'{self.prefix} shutdown')
-
-    def get_task_queue(self, topic: str):
-        try:
-            q = self.__task_queues[topic]
-        except KeyError:
-            return None
-        return q
-    
-    @property
-    def result_queue(self):
-        return self.__result_queue
-    
-    @property
-    def incoming_queue(self):
-        return self.__incoming_queue
     
     def run(self):
         # TODO: Multithreadding here

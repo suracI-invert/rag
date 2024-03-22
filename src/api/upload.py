@@ -16,7 +16,7 @@ async def upload_doc(
         req: Request):
     #TODO: Start background tasks
     task_request = build_task_request(doc)
-    background_tasks.add_task(start_task, req.app.state.store, req.app.state.broker.incoming_queue, task_request, 'doc')
+    background_tasks.add_task(start_task, req.app.state.store, req.app.state.incoming_queue, task_request, 'doc')
     return task_request
 
 @router.get('/doc/status/{id}')

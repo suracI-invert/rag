@@ -14,6 +14,9 @@ class DummyModel(Worker):
     def __init__(self, topic=('doc',)):
         super().__init__(self.__class__, name='Dummy', topic=topic)
     
+    def setup(self):
+        pass
+
     @task('doc')
     def bypass(self, text, *args, **kwargs):
         return f'{text} processed by dummy model'
@@ -28,8 +31,11 @@ class BGE(Worker):
         else:
             self.device = device
         logger.debug(f'Found {self.device}')
+
+    def setup(self):
         self.model = AutoModel.from_pretrained(self.MODEL_NAME).to(self.device)
         self.tokenizer = AutoTokenizer.from_pretrained(self.MODEL_NAME)
+        logger.info('Embedding model initialized')
 
     @task('doc')
     def embedding(self, text):
