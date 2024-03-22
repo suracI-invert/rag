@@ -22,7 +22,7 @@ from src.models.reranker import Reranker
 from src.tasks.broker import *
 from src.api import upload, query
 from src.tasks.handler import *
-from src.logger import load_config
+from src.logger import load_config, MultiProcessesLogger
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -34,14 +34,21 @@ async def lifespan(app: FastAPI):
         'query': p_manager.Queue(),
         'rerank': p_manager.Queue(),
     }
+    app.state.log_queue = p_manager.Queue()
 
-    app.state.broker = Broker(app.state.task_queues, app.state.incoming_queue, app.state.result_queue)
+    app.state.broker = Broker(app.state.task_queues, app.state.incoming_queue, app.state.result_queue, app.state.log_queue)
+
     app.state.model_emb = BGE(topic=('doc', 'query',))
-    app.state.model_emb.register(app.state.task_queues, app.state.incoming_queue)
+    app.state.model_emb.register(app.state.task_queues, app.state.incoming_queue, app.state.log_queue)
+
     app.state.model_rerank = Reranker(topic=('rerank',))
-    app.state.model_rerank.register(app.state.task_queues, app.state.incoming_queue)
+    app.state.model_rerank.register(app.state.task_queues, app.state.incoming_queue, app.state.log_queue)
+
     app.state.store = ResultStore(app.state.result_queue)
 
+    app.state.logger = MultiProcessesLogger(app.state.log_queue)
+    app.state.logger.start()
+    
     app.state.broker.start()
     app.state.model_emb.start()
     app.state.model_rerank.start()
@@ -51,6 +58,9 @@ async def lifespan(app: FastAPI):
     app.state.model_rerank.close()
     app.state.broker.close()
     app.state.store.close()
+    app.state.logger.close()
+
+    p_manager.shutdown()
 
 app = FastAPI(lifespan=lifespan)
 
@@ -63,4 +73,4 @@ async def home():
 
 if __name__ == "__main__":
     config = load_config('logger.yaml')
-    uvicorn.run(app, host='127.0.0.1', port=8000, log_config=config, log_level='debug')
+    uvicorn.run(app, host='127.0.0.1', port=8000, log_config=config, log_level='info')

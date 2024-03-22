@@ -24,9 +24,12 @@ class Reranker(Worker):
             self.device = device
         
     def setup(self):
-        self.model = AutoModelForSequenceClassification.from_pretrained(self.MODEL_NAME).to(self.device)
+        self.model = AutoModelForSequenceClassification.from_pretrained(self.MODEL_NAME).to(self.device).to_bettertransformer()
         self.tokenizer = AutoTokenizer.from_pretrained(self.MODEL_NAME)
-        logger.info('Reranking model initialized')
+
+        self.model.eval()
+
+        self.in_run_log('info', f'Reranking model [{self.MODEL_NAME}] initialized: {self.model.get_memory_footprint() / 1024**3}GB')
 
     def build_pair(self, q: str, docs: list[str]):
         return [[q, d] for d in docs]

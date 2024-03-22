@@ -56,7 +56,7 @@ class ResultStore:
 
 class Broker(Process):
 
-    def __init__(self, task_queues: dict[str, Queue], incoming_queue: Queue, result_queue: Queue):
+    def __init__(self, task_queues: dict[str, Queue], incoming_queue: Queue, result_queue: Queue, log_queue: Queue):
         Process.__init__(self)
 
         # Initialize internal incomming messsage cache
@@ -65,6 +65,7 @@ class Broker(Process):
         self.__incoming_queue = incoming_queue
         self.__task_queues: dict[str, Queue] = task_queues
         self.__result_queue = result_queue
+        self.__log_queue = log_queue
 
         self.__quit = Event()
 
@@ -78,8 +79,16 @@ class Broker(Process):
 
         logger.info(f'{self.prefix} shutdown')
     
+    # TODO: Another thread
+    def in_run_log(self, levelno: str, msg: str):
+        try:
+            self.__log_queue.put((levelno, msg), block=False)
+        except Empty:
+            pass
+    
     def run(self):
         # TODO: Multithreadding here
+        # All logging should go to log_queue
         while True:
             if self.__quit.is_set():
                 #TODO: logging here
@@ -89,7 +98,7 @@ class Broker(Process):
             except Empty:
                 pass
             else:
-                logger.debug(f'{self.prefix} received: {incoming_msg}')
+                self.in_run_log('debug', f'{self.prefix} received: {incoming_msg}')
                 self.__incoming_cache.appendleft(incoming_msg)
             if len(self.__incoming_cache) > 0:
                 try:
@@ -105,5 +114,5 @@ class Broker(Process):
                     pass
                     #TODO: Error handling
                 else:
-                    logger.debug(f'{self.prefix} sent: {msg.id} through {msg.topic}')
+                    self.in_run_log('debug', f'{self.prefix} sent: {msg.id} through {msg.topic}')
                     self.__incoming_cache.pop()

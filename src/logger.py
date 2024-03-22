@@ -1,3 +1,7 @@
+from multiprocessing import Queue
+from threading import Thread
+from queue import Empty
+from collections import deque
 import logging
 import yaml
 
@@ -36,3 +40,41 @@ def load_config(fname):
     with open(f'./config/{fname}') as f:
         loaded_config = yaml.safe_load(f)
     return loaded_config
+
+class MultiProcessesLogger(Thread):
+    def __init__(self, logger_queue: Queue, logger_name: str = 'uvicorn.error'):
+        super().__init__(name=logger_name)
+        self.logger = logging.getLogger(logger_name)
+        self.msg_cache = deque()
+        self.__q = logger_queue
+
+        self.__quit = False
+
+        self.map_fn = {
+            'info': self.logger.info,
+            'debug': self.logger.debug,
+            'exception': self.logger.exception,
+            'warning': self.logger.exception,
+            'error': self.logger.error,
+            'critical': self.logger.critical
+        }
+
+    def run(self):
+        while True:
+            if self.__quit:
+                break
+            try:
+                levelno, msg = self.__q.get(block=False)
+            except Empty:
+                pass
+            else:
+                self.msg_cache.appendleft((levelno, msg))
+
+            if len(self.msg_cache) > 0:
+                levelno, msg = self.msg_cache.pop()
+                self.map_fn[levelno](msg)
+        self.logger.info('Logger closed')
+    
+    def close(self):
+        self.__quit = True
+        self.join()

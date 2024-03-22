@@ -32,6 +32,7 @@ class Worker(Process):
         self.__msg_cache = deque()
         self.__tqs: dict[str, Queue] = {}
         self.__rq: Queue = None
+        self.__log_queue = None
         self.__quit = Event()
 
         self.__handler_map: dict[str, callable] = {}
@@ -55,7 +56,7 @@ class Worker(Process):
         """
         raise NotImplementedError()
 
-    def register(self, tqs: dict[str, Queue], rq: Queue):
+    def register(self, tqs: dict[str, Queue], rq: Queue, lq: Queue):
         for t in self.topic:
             tq = tqs[t]
             if not tq:
@@ -64,6 +65,7 @@ class Worker(Process):
             self.__tqs[t] = tq
             logger.info(f'{self.prefix}  register [{t}] task queue')
         self.__rq = rq
+        self.__log_queue = lq
 
     def close(self):
         self.__quit.set()
@@ -75,11 +77,18 @@ class Worker(Process):
     def process(self, topic: str, task_req: TaskRequest) -> tuple[str, TaskResult]:
         # Dynamic dispatch
         return self.__handler_map[topic](self, task_req)
+    
+    # TODO: Another thread
+    def in_run_log(self, levelno: str, msg: str):
+        try:
+            self.__log_queue.put((levelno, msg), block=False)
+        except Empty:
+            pass
 
     def run(self):
         #TODO: Clean this
-        logger.info(f'{self.prefix} spawned')
-        
+        self.in_run_log('info', f'{self.prefix} spawned')
+
         self.setup()
 
         while True:
@@ -90,13 +99,13 @@ class Worker(Process):
                 if not msg:
                     continue
                 else:
-                    logger.debug(f'{self.prefix} received task: {msg.payload}')
+                    self.in_run_log('debug', f'{self.prefix} received task: {msg.payload}')
                     self.__msg_cache.appendleft(msg)
             if len(self.__msg_cache) == 0:
                 continue
             msg = self.__msg_cache.pop()
 
-            logger.debug(f'{self.prefix} start task: {msg.payload}')
+            self.in_run_log('debug', f'{self.prefix} start task: {msg.payload}')
             next_task = msg.payload
             task_id, topic, tr = self.process(msg.topic, next_task) # Payload: TaskRequest
             self.__res_list.appendleft((task_id, topic, tr))
@@ -107,7 +116,7 @@ class Worker(Process):
                 if not ret:
                     break
                 else:
-                    logger.debug(f'{self.prefix} sent res [{res_tuple[0]}]')
+                    self.in_run_log('debug', f'{self.prefix} sent res [{res_tuple[0]}]')
                     self.__res_list.pop()
     
-        logger.info(f'{self.prefix} shutdown')
+        self.in_run_log('info', f'{self.prefix} shutdown')

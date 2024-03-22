@@ -33,9 +33,12 @@ class BGE(Worker):
         logger.debug(f'Found {self.device}')
 
     def setup(self):
-        self.model = AutoModel.from_pretrained(self.MODEL_NAME).to(self.device)
+        self.model = AutoModel.from_pretrained(self.MODEL_NAME).to(self.device).to_bettertransformer()
         self.tokenizer = AutoTokenizer.from_pretrained(self.MODEL_NAME)
-        logger.info('Embedding model initialized')
+
+        self.model.eval()
+
+        self.in_run_log('info', f'Embedding model [{self.MODEL_NAME}] initialized: {self.model.get_memory_footprint() / 1024**3}GB')
 
     @task('doc')
     def embedding(self, text):

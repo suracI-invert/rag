@@ -18,6 +18,9 @@ python-dotenv = "*"
 pymilvus = "*"
 pymongo = {extras = ["srv"], version = "*"}
 gradio = "*"
+bitsandbytes = "*"
+accelerate = "*"
+optimum = "*"
 
 [dev-packages]
 
