@@ -64,4 +64,4 @@ class Reranker(Worker):
 
         score = self.model(**encoded_input, return_dict=True).logits.view(-1).to('cpu').detach().float()
         score = [s.item() for s in score]
-        return 'gen', {'query': query, 'docs': self.sort_result(docs, score)}
+        return 'gen', {'query': query, 'context': self.sort_result(docs, score)}

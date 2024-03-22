@@ -41,12 +41,12 @@ def task(topic: str):
         def wrapper(self, tr: TaskRequest):
             t = perf_counter()
             state = tr.state
-            topic = ''
+            topic = 'result'
             try:
                 topic, data = func(self, **tr.data)
-            except Exception:
+            except Exception as e:
                 state = State.Failed
-                data = None
+                data = repr(e)
             else:
                 state = State.Success
             duration = perf_counter() -  t

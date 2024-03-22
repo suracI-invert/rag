@@ -21,6 +21,7 @@ gradio = "*"
 bitsandbytes = "*"
 accelerate = "*"
 optimum = "*"
+sseclient-py = "*"
 
 [dev-packages]
 
