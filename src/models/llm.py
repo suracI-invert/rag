@@ -112,7 +112,7 @@ class ChatGPT(Worker):
         pass
 
     def extract_context(self, context):
-        context_str = '\n\n'.join([f"Retrieval score: {c['score']}\n\n{c['content']}" for c in context[:n]])
+        context_str = '\n\n'.join([f"Retrieval score: {c['score']}\n\n{c['content']}" for c in context])
         return context_str
 
     @task('gen')
