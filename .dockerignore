@@ -2,12 +2,10 @@ tests/unit/
 
 *test.py
 
-.venv
-
-.env
-
 __pycache__
 
 .cache
+
+.venv
 
 flagged
