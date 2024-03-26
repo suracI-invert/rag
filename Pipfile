@@ -3,20 +3,14 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 name = "pypi"
 
-[[source]]
-url = "https://download.pytorch.org/whl/cu118/"
-verify_ssl = true
-name = "downloadpytorch"
-
 [packages]
 fastapi = "*"
 uvicorn = {extras = ["standard"], version = "*"}
-torch = {version = "==2.2.1", index = "downloadpytorch"}
 transformers = "*"
 requests = "*"
 python-dotenv = "*"
 pymilvus = "*"
-pymongo = {extras = ["srv"], version = "*"}
+pymongo = {extras = ["src"], version = "*"}
 gradio = "*"
 bitsandbytes = "*"
 accelerate = "*"
@@ -28,4 +22,3 @@ websockets = "*"
 
 [requires]
 python_version = "3.12"
-python_full_version = "3.12.1"

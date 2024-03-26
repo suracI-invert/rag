@@ -30,7 +30,7 @@ class BGE(Worker):
             self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         else:
             self.device = device
-        logger.debug(f'Found {self.device}')
+        logger.info(f'Found {self.device} for {self.name}')
 
     def setup(self):
         quantization_config = BitsAndBytesConfig(
@@ -49,7 +49,6 @@ class BGE(Worker):
             self.model = AutoModel.from_pretrained(self.MODEL_NAME)
         self.model.eval()
         self.tokenizer = AutoTokenizer.from_pretrained(self.MODEL_NAME)
-
 
         self.in_run_log('info', f'Embedding model [{self.MODEL_NAME}] initialized: {self.model.get_memory_footprint() / 1024**3}GB')
 

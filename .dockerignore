@@ -4,8 +4,6 @@ tests/unit/
 
 __pycache__
 
-.cache
-
 .venv
 
 flagged

@@ -23,6 +23,8 @@ class Reranker(Worker):
         else:
             self.device = device
         
+        logger.info(f'Found {self.device} for {self.name}')
+        
     def setup(self):
         quantization_config = BitsAndBytesConfig(
             load_in_4bit=True,

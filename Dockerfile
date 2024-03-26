@@ -1,4 +1,5 @@
 FROM ubuntu:22.04
+EXPOSE 80
 
 RUN ln -snf /usr/share/zoneinfo/$CONTAINER_TIMEZONE /etc/localtime && echo $CONTAINER_TIMEZONE > /etc/timezone
 
@@ -16,18 +17,21 @@ ENV PYTHON_VERSION=3.12.1
 RUN pyenv install ${PYTHON_VERSION}
 RUN pyenv global ${PYTHON_VERSION}
 
+RUN pip install fastapi uvicorn[standard] requests python-dotenv pymilvus pymongo[srv] gradio sseclient-py websockets
+RUN pip install torch --index-url https://download.pytorch.org/whl/cu118
+RUN pip install transformers bitsandbytes accelerate optimum 
+
 WORKDIR /app
 
-COPY . .
+COPY ./download_model.py ./
 
-ENV PIPENV_VENV_IN_PROJECT=1
-RUN python -m pip install --upgrade pip
+RUN python download_model.py
 
-RUN pip install pipenv --user
+COPY ./src ./src
+COPY ./public ./public
+COPY ./config ./config
+COPY ./.env .
+COPY ./main.py .
 
-RUN /root/.local/bin/pipenv install
-
-CMD [ "/app/.venv/bin/python", "/app/main.py" ]  
-
-
-
+CMD [ "python", "-m", "uvicorn", "main:app", "--log-config=config/logger.yaml", "--port", "80", "--host", "0.0.0.0" ]  
+# CMD ["ls", "./.cache"]

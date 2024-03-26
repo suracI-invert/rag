@@ -15,7 +15,9 @@ if __name__ == '__main__':
         print(f'Process context set to <{get_start_method()}>')
 
 from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
 import uvicorn
+import gradio as gr
 
 from src.models.emb import DummyModel, BGE
 from src.models.reranker import Reranker
@@ -24,6 +26,8 @@ from src.tasks.broker import *
 from src.api import upload, query
 from src.tasks.handler import *
 from src.logger import load_config, MultiProcessesLogger
+
+from public.fe import demo
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -76,8 +80,10 @@ app.include_router(query.router)
 
 @app.get('/')
 async def home():
-    return 'Deep state is real'
+    return RedirectResponse('/gradio')
 
-if __name__ == "__main__":
-    config = load_config('logger.yaml')
-    uvicorn.run(app, host='127.0.0.1', port=8000, log_config=config, log_level='info')
+app = gr.mount_gradio_app(app, demo, path="/gradio")
+
+# if __name__ == "__main__":
+#     config = load_config('logger.yaml')
+#     uvicorn.run(app, host='127.0.0.1', port=8000, log_config=config, log_level='info')
