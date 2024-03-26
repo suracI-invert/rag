@@ -30,6 +30,10 @@ class ResultStore:
     def result_dict(self):
         return self.__result_dict
 
+    #TODO: decorator caching
+    def get_result(self, task_id: str):
+        return self.__result_dict[task_id]
+
     def poll(self):
         while True:
             if self.__quit:
@@ -85,6 +89,12 @@ class Broker(Process):
             self.__log_queue.put((levelno, msg), block=False)
         except Empty:
             pass
+    
+    def poll_msg(self):
+        while True:
+            # if self.
+            incoming_msg = self.__incoming_queue.get()
+            self.__incoming_cache.appendleft(incoming_msg)
     
     def run(self):
         # TODO: Multithreadding here

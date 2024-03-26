@@ -22,6 +22,7 @@ bitsandbytes = "*"
 accelerate = "*"
 optimum = "*"
 sseclient-py = "*"
+websockets = "*"
 
 [dev-packages]
 
