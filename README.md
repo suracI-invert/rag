@@ -16,25 +16,16 @@ COLLECTION_NAME=RAG
 MONGO_URI=$(MongoDB_Atlas_URI)
 API_TOKEN=$(gpt_bearer_token)
 ```
-Download Models beforehand
-```
-```
 
-Ship with docker
+Ship with docker-compose
 ```
-docker build -t rag .
+docker compose build
 ```
 
 ```
-docker run -p HOST:80 rag
-```
-
-Example:
-```
-docker run -p 127.0.0.1:8000:80 rag
+docker rcompose up
 ```
 
 Service will be served at 127.0.0.1:8000
 
-SwaggerAPI Docs at endpoint: /docs
 
