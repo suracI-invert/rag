@@ -1,0 +1,24 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+fastapi = "*"
+uvicorn = {extras = ["standard"], version = "*"}
+transformers = "*"
+requests = "*"
+python-dotenv = "*"
+pymilvus = "*"
+pymongo = {extras = ["src"], version = "*"}
+gradio = "*"
+bitsandbytes = "*"
+accelerate = "*"
+optimum = "*"
+sseclient-py = "*"
+websockets = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.12"
