@@ -17,7 +17,6 @@ if __name__ == '__main__':
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 import uvicorn
-import gradio as gr
 
 from src.models.emb import DummyModel, BGE
 from src.models.reranker import Reranker
@@ -26,8 +25,6 @@ from src.tasks.broker import *
 from src.api import upload, query
 from src.tasks.handler import *
 from src.logger import load_config, MultiProcessesLogger
-
-from public.fe import demo
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -82,7 +79,7 @@ app.include_router(query.router)
 async def home():
     return RedirectResponse('/gradio')
 
-app = gr.mount_gradio_app(app, demo, path="/gradio")
+# app = gr.mount_gradio_app(app, demo, path="/gradio")
 
 # if __name__ == "__main__":
 #     config = load_config('logger.yaml')
